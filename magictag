@@ -1,0 +1,167 @@
+#! /usr/bin/env python3
+
+if __name__ != '__main__':
+    raise Exception('Must be run as an executable.')
+
+import chardet
+from datetime import datetime
+import dateutil.parser
+from collections import OrderedDict
+import mutagen
+import os
+import os.path
+import re
+import sys
+from titlecase import titlecase
+
+FEAT_PATTERN = re.compile(r' \((?P<term>feat\.|with) (?P<feature>.+?)\)', re.IGNORECASE)
+
+def artist_titlecase(title):
+    def titlecase_callback(word, **kwargs):
+        if word.lower() in ['with', 'feat.']:
+            return word.lower()
+
+    return ' / '.join(map(lambda title: titlecase(title, callback=titlecase_callback), title.split(' / ')))
+
+def generate_sort(tag, tags):
+    base_tag = tag[:-4]
+    if tags[base_tag][:4] == 'The ':
+        return tags[base_tag][4:] + ', The'
+
+def generate_artist(tag, tags):
+    title_featuring = FEAT_PATTERN.search(tags['TITLE'])
+    artist_featuring = FEAT_PATTERN.search(tags['ARTIST'])
+    if title_featuring is None or artist_featuring is not None:
+        return tags['ARTIST']
+
+    return tags['ARTIST'] + ' ' + title_featuring.group('term').lower() + ' ' + title_featuring.group('feature')
+
+def generate_title(tag, tags):
+    title_featuring = FEAT_PATTERN.search(tags['TITLE'])
+    if title_featuring is None:
+        return tags['TITLE']
+
+    return tags['TITLE'][:title_featuring.span()[0]] + tags['TITLE'][title_featuring.span()[1]:]
+
+def generate_filename(song):
+    path = os.path.dirname(song.filename)
+    title = re.sub(r'[<>:/\|]', '-', song['TITLE'][0])
+    title = re.sub(r'["]', '\'', title)
+    title = re.sub(r'[?*]', '_', title)
+    title = re.sub(r'[_.]$', '', title)
+    return os.path.join(path, '%02d - %s.flac' % (int(song['TRACKNUMBER'][0]), title))
+
+DEFALT_TAGS = OrderedDict.fromkeys([
+    'ALBUMARTIST',
+    'ALBUMARTISTSORT',
+    'ALBUM',
+    'ALBUMSORT',
+    'DATE',
+    'DISCNUMBER',
+    'DISCTOTAL',
+    'GENRE',
+    'ARTIST',
+    'ARTISTSORT',
+    'TITLE',
+    'COMPOSER',
+    'DESCRIPTION',
+    'PERFORMER',
+    'TRACKNUMBER',
+    'TRACKTOTAL',
+    'REPLAYGAIN_REFERENCE_LOUDNESS',
+    'REPLAYGAIN_TRACK_GAIN',
+    'REPLAYGAIN_TRACK_PEAK',
+    'REPLAYGAIN_ALBUM_GAIN',
+    'REPLAYGAIN_ALBUM_PEAK'
+])
+
+RENAME_TAGS = {
+    'TOTALDISCS': 'DISCTOTAL',
+    'TOTALTRACKS': 'TRACKTOTAL'
+}
+
+FILTER_TAGS = {
+    'ALBUMARTIST': artist_titlecase,
+    'ALBUM': titlecase,
+    'DATE': int,
+    'DISCNUMBER': int,
+    'DISCTOTAL': int,
+    'GENRE': titlecase,
+    'TITLE': artist_titlecase,
+    'COMPOSER': titlecase,
+    'PERFORMER': titlecase,
+    'TRACKNUMBER': int,
+    'TRACKTOTAL': int
+}
+
+GENERATE_TAGS = OrderedDict([
+    ('ALBUMARTIST', lambda tag, tags: tags['ARTIST'] if tags[tag] is None else tags[tag]),
+    ('ALBUMARTISTSORT', generate_sort),
+    ('ARTIST', generate_artist),
+    ('ALBUMSORT', generate_sort),
+    ('ARTISTSORT', generate_sort),
+    ('TITLE', generate_title),
+    ('DISCNUMBER', lambda tag, tags: 1 if tags[tag] is None else tags[tag]),
+    ('DISCTOTAL', lambda tag, tags: 1 if tags[tag] is None else tags[tag])
+])
+
+paths = sys.argv[1:]
+
+access_time = datetime.now().timestamp()
+rip_time = None
+
+for log_path in [f for f in paths if f.lower().endswith('.log')]:
+    with open(log_path, 'rb') as log_file:
+        log_raw = log_file.read()
+        charset = chardet.detect(log_raw)
+        log = log_raw.decode(charset['encoding'])
+        rip_time_match = re.search('extraction logfile from (.*)', log)
+        if rip_time_match is not None:
+            rip_time = dateutil.parser.parse(rip_time_match.groups(1)[0]).timestamp()
+
+if rip_time is not None:
+    for extra_path in [f for f in paths if f.lower().split('.')[-1] in ('cue', 'jpg', 'log')]:
+        os.utime(extra_path, times=(access_time, rip_time))
+        os.chmod(extra_path, 0o644)
+
+path_directories = list(set([os.path.dirname(path) for path in paths]))
+if len(path_directories) == 1:
+    directory = path_directories[0] if path_directories[0] != '' else '.'
+    path_filenames = set([os.path.basename(path) for path in paths])
+    directory_filenames = set(os.listdir(directory))
+
+    if path_filenames == directory_filenames:
+        os.utime(directory, times=(access_time, rip_time))
+        os.chmod(directory, 0o755)
+
+songs = map(mutagen.File, filter(lambda f: f.lower().endswith('.flac'), sys.argv[1:]))
+for song in songs:
+    tags = DEFALT_TAGS.copy()
+    for tag, value in song.tags:
+        tag = tag.upper()
+
+        if tag in RENAME_TAGS:
+            tag = RENAME_TAGS[tag]
+
+        if tag not in tags:
+            continue
+
+        if tag in FILTER_TAGS:
+            value = FILTER_TAGS[tag](value)
+
+        tags[tag] = value
+
+    for tag in GENERATE_TAGS:
+        tags[tag] = GENERATE_TAGS[tag](tag, tags)
+
+    song.delete()
+    for tag in tags:
+        if tags[tag] is not None and tags[tag] != '':
+            song[tag] = [str(tags[tag])]
+    song.save(padding=lambda _: 8192)
+
+    if rip_time is not None:
+        os.utime(song.filename, times=(access_time, rip_time))
+        os.chmod(song.filename, 0o644)
+
+    os.rename(song.filename, generate_filename(song))
