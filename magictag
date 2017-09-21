@@ -156,6 +156,7 @@ for song in songs:
         tags[tag] = GENERATE_TAGS[tag](tag, tags)
 
     song.delete()
+    song.clear_pictures()
     for tag in tags:
         if tags[tag] is not None and tags[tag] != '':
             song[tag] = [str(tags[tag])]
