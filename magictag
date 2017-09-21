@@ -115,9 +115,11 @@ for log_path in [f for f in paths if f.lower().endswith('.log')]:
         log_raw = log_file.read()
         charset = chardet.detect(log_raw)
         log = log_raw.decode(charset['encoding'])
-        rip_time_match = re.search('extraction logfile from (.*)', log)
+        rip_time_match = re.search('extraction logfile from ((.+)( for .*)|(.+))', log)
         if rip_time_match is not None:
-            rip_time = dateutil.parser.parse(rip_time_match.groups(1)[0]).timestamp()
+            opt1, opt2, _, _ = rip_time_match.groups()
+            time_string = opt2 if opt2 is not None else opt1
+            rip_time = dateutil.parser.parse(time_string).timestamp()
 
 for extra_path in [f for f in paths if f.lower().split('.')[-1] in ('cue', 'jpg', 'log')]:
     if rip_time is not None:
