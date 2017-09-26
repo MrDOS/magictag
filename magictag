@@ -24,9 +24,11 @@ def tag_titlecase(title, **kwargs):
     return titlecase(title, callback=callback)
 
 def artist_titlecase(title):
-    def titlecase_callback(word, **kwargs):
-        if word.lower() in ['with', 'feat.']:
+    def titlecase_callback(word,  **kwargs):
+        if word.lower() in ['with', 'feat.', 'la'] and not titlecase_callback.first_word:
             return word.lower()
+        titlecase_callback.first_word = False
+    titlecase_callback.first_word = True
 
     return ' / '.join(map(lambda title: tag_titlecase(title, callback=titlecase_callback), title.split(' / ')))
 
