@@ -109,7 +109,8 @@ GENERATE_TAGS = OrderedDict([
     ('ARTISTSORT', generate_sort),
     ('TITLE', generate_title),
     ('DISCNUMBER', lambda tag, tags: 1 if tags[tag] is None else tags[tag]),
-    ('DISCTOTAL', lambda tag, tags: 1 if tags[tag] is None else tags[tag])
+    ('DISCTOTAL', lambda tag, tags: 1 if tags[tag] is None else tags[tag]),
+    ('TRACKTOTAL', lambda tag, tags: len(songs) if tags[tag] is None else tags[tag])
 ])
 
 paths = sys.argv[1:]
