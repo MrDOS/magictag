@@ -30,7 +30,7 @@ def artist_titlecase(title):
         titlecase_callback.first_word = False
     titlecase_callback.first_word = True
 
-    return ' / '.join(map(lambda title: tag_titlecase(title, callback=titlecase_callback), title.split(' / ')))
+    return ' / '.join([tag_titlecase(part, callback=titlecase_callback) for part in title.split(' / ')])
 
 def generate_sort(tag, tags):
     base_tag = tag[:-4]
@@ -147,7 +147,7 @@ if len(path_directories) == 1:
             os.utime(directory, times=(access_time, rip_time))
         os.chmod(directory, 0o755)
 
-songs = list(map(mutagen.File, filter(lambda f: f.lower().endswith('.flac'), sys.argv[1:])))
+songs = [mutagen.File(f) for f in paths if f.lower().endswith('.flac')]
 for song in songs:
     tags = DEFALT_TAGS.copy()
     for tag, value in song.tags:
