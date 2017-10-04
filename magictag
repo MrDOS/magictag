@@ -59,7 +59,9 @@ def generate_filename(song):
     title = re.sub(r'[<>:/\|]', '-', song['TITLE'][0])
     title = re.sub(r'["]', '\'', title)
     title = re.sub(r'[?*]', '_', title)
-    title = re.sub(r'(_|[^.]\.)$', '', title)
+    # If we had a special character at the very end of the title, just drop it.
+    # Same for trailing full stops.
+    title = re.sub(r'[_.]$', '', title)
     return os.path.join(path, '%02d - %s.flac' % (int(song['TRACKNUMBER'][0]), title))
 
 def fetch_itunes_album_art(album_artist, album, filename):
