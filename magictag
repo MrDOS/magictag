@@ -36,8 +36,17 @@ def artist_titlecase(title):
 
 def generate_sort(tag, tags):
     base_tag = tag[:-4]
-    if tags[base_tag][:4] == 'The ':
-        return tags[base_tag][4:] + ', The'
+    reference_value = tags[base_tag]
+    value = reference_value
+
+    if value[:4] == 'The ':
+        value = value[4:] + ', The'
+
+    value = value.replace('!', 'i')
+    value = value.replace('$', 's')
+
+    if value != reference_value:
+        return value
 
 def generate_artist(tag, tags):
     title_featuring = FEAT_PATTERN.search(tags['TITLE'])
