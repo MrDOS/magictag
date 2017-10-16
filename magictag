@@ -25,6 +25,7 @@ def tag_titlecase(title, **kwargs):
     return titlecase(title, callback=callback)
 
 def artist_titlecase(title):
+    title = re.sub(r'\(featuring ', '(feat. ', title, flags=re.IGNORECASE)
     def titlecase_callback(word,  **kwargs):
         if word.lower() in ['with', 'feat.', 'la'] and not titlecase_callback.first_word:
             return word.lower()
