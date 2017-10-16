@@ -7,7 +7,6 @@ import chardet
 from datetime import datetime
 import dateutil.parser
 from collections import OrderedDict
-import itunes
 import mutagen
 import os
 import os.path
@@ -74,12 +73,19 @@ def generate_filename(song):
     return os.path.join(path, '%02d - %s.flac' % (int(song['TRACKNUMBER'][0]), title))
 
 def fetch_itunes_album_art(album_artist, album, filename):
+    try:
+        import itunes
+    except ImportError:
+        print('Couldn\'t load the "itunes" module! Skipping art retrieval.')
+        return
+
     albums = itunes.search_album('%s %s' % (album_artist, album))
     if not len(albums):
         return
     _, low_res = albums[0].get_artwork().popitem()
     high_res = low_res[:low_res.rindex('/') + 1] + '100000x100000-999.jpg'
     urllib.request.urlretrieve(high_res, filename)
+    return filename
 
 DEFALT_TAGS = OrderedDict.fromkeys([
     'ALBUMARTIST',
@@ -209,10 +215,11 @@ for song in songs:
 if whole_directory:
     if len([f for f in paths if f.lower().endswith('.jpg')]) == 0:
         artwork_path = os.path.join(directory, 'folder.jpg')
-        fetch_itunes_album_art(album_artist, album, artwork_path)
-        if rip_time is not None:
-            os.utime(artwork_path, times=(access_time, rip_time))
-        os.chmod(artwork_path, 0o644)
+        artwork_path = fetch_itunes_album_art(album_artist, album, artwork_path)
+        if artwork_path is not None:
+            if rip_time is not None:
+                os.utime(artwork_path, times=(access_time, rip_time))
+            os.chmod(artwork_path, 0o644)
 
     if rip_time is not None:
         os.utime(directory, times=(access_time, rip_time))
