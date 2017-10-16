@@ -64,13 +64,18 @@ def generate_title(tag, tags):
 
 def generate_filename(song):
     path = os.path.dirname(song.filename)
-    title = re.sub(r'[<>:/\|]', '-', song['TITLE'][0])
-    title = re.sub(r'["]', '\'', title)
-    title = re.sub(r'[?*]', '_', title)
-    # If we had a special character at the very end of the title, just drop it.
+    track_number = int(song['TRACKNUMBER'][0])
+    title = filename_filter(song['TITLE'][0])
+    return os.path.join(path, '%02d - %s.flac' % (track_number, title))
+
+def filename_filter(value):
+    value = re.sub(r'[<>:/\|]', '-', value)
+    value = re.sub(r'["]', '\'', value)
+    value = re.sub(r'[?*]', '_', value)
+    # If we had a special character at the very end of the value, just drop it.
     # Same for trailing full stops.
-    title = re.sub(r'[_.]$', '', title)
-    return os.path.join(path, '%02d - %s.flac' % (int(song['TRACKNUMBER'][0]), title))
+    value = re.sub(r'[_.]$', '', value)
+    return value
 
 def fetch_itunes_album_art(album_artist, album, filename):
     try:
@@ -147,7 +152,8 @@ paths = sys.argv[1:]
 access_time = datetime.now().timestamp()
 rip_time = None
 
-for log_path in [f for f in paths if f.lower().endswith('.log')]:
+log_paths = [f for f in paths if f.lower().endswith('.log')]
+for log_path in log_paths:
     with open(log_path, 'rb') as log_file:
         log_raw = log_file.read()
         charset = chardet.detect(log_raw)
@@ -177,6 +183,7 @@ if len(path_directories) == 1:
 songs = [mutagen.File(f) for f in paths if f.lower().endswith('.flac')]
 album_artist = None
 album = None
+album_date = None
 for song in songs:
     tags = DEFALT_TAGS.copy()
     for tag, value in song.tags:
@@ -198,6 +205,7 @@ for song in songs:
 
     album_artist = tags['ALBUMARTIST']
     album = tags['ALBUM']
+    album_date = tags['DATE']
 
     song.delete()
     song.clear_pictures()
@@ -212,6 +220,21 @@ for song in songs:
 
     os.rename(song.filename, generate_filename(song))
 
+if len(log_paths) > 1:
+    printf('Multiple log files; not renaming.')
+elif len(log_paths) == 1:
+    log_path = log_paths[0]
+    new_log_path = os.path.join(os.path.dirname(log_path), '%s - %s.log' % (filename_filter(album_artist), filename_filter(album)))
+    os.rename(log_path, new_log_path)
+
+cue_paths = [f for f in paths if f.lower().endswith('.cue')]
+if len(cue_paths) > 1:
+    printf('Multiple cue files; not renaming.')
+elif len(cue_paths) == 1:
+    cue_path = cue_paths[0]
+    new_cue_path = os.path.join(os.path.dirname(cue_path), '%s.cue' % (filename_filter(album)))
+    os.rename(cue_path, new_cue_path)
+
 if whole_directory:
     if len([f for f in paths if f.lower().endswith('.jpg')]) == 0:
         artwork_path = os.path.join(directory, 'folder.jpg')
@@ -224,3 +247,8 @@ if whole_directory:
     if rip_time is not None:
         os.utime(directory, times=(access_time, rip_time))
     os.chmod(directory, 0o755)
+
+    if directory == '.':
+        print('Cannot rename the directory while in it!')
+    else:
+        os.rename(directory, '%s (%s)' % (filename_filter(album), album_date))
