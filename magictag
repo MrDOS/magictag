@@ -11,6 +11,7 @@ import mutagen
 import os
 import os.path
 import re
+import subprocess
 import sys
 from titlecase import titlecase
 import urllib.request
@@ -148,7 +149,8 @@ GENERATE_TAGS = OrderedDict([
     ('TRACKTOTAL', lambda tag, tags: len(songs) if tags[tag] is None else tags[tag])
 ])
 
-paths = sys.argv[1:]
+flags = [flag[2:] for flag in sys.argv[1:] if flag.startswith('--')]
+paths = [path for path in sys.argv[1:] if not path.startswith('--')]
 directory = None
 whole_directory = False
 
@@ -187,10 +189,17 @@ if directory is None and len(path_directories) == 1:
     if path_filenames == directory_filenames:
         whole_directory = True
 
-songs = [mutagen.File(f) for f in paths if f.lower().endswith('.flac')]
+song_paths = [f for f in paths if f.lower().endswith('.flac')]
+
+if 'add-replay-gain' in flags:
+    print('Calculating ReplayGain...')
+    subprocess.run(['metaflac', '--add-replay-gain'] + song_paths)
+
+songs = [mutagen.File(f) for f in song_paths]
 album_artist = None
 album = None
 album_date = None
+print('Tagging...')
 for song in songs:
     tags = DEFALT_TAGS.copy()
     for tag, value in song.tags:
@@ -244,6 +253,7 @@ elif len(cue_paths) == 1:
 
 if whole_directory:
     if len([f for f in paths if f.lower().endswith('.jpg')]) == 0:
+        print('Fetching artwork...')
         artwork_path = os.path.join(directory, 'folder.jpg')
         artwork_path = fetch_itunes_album_art(album_artist, album, artwork_path)
         if artwork_path is not None:
