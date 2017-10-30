@@ -133,7 +133,7 @@ FILTER_TAGS = {
     'TITLE': artist_titlecase,
     'COMPOSER': tag_titlecase,
     'PERFORMER': tag_titlecase,
-    'TRACKNUMBER': int,
+    'TRACKNUMBER': lambda number: int(number.split('/')[0]),
     'TRACKTOTAL': int
 }
 
