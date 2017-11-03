@@ -237,7 +237,7 @@ for song in songs:
     os.rename(song.filename, generate_filename(song))
 
 if len(log_paths) > 1:
-    printf('Multiple log files; not renaming.')
+    print('Multiple log files; not renaming.')
 elif len(log_paths) == 1:
     log_path = log_paths[0]
     new_log_path = os.path.join(os.path.dirname(log_path), '%s - %s.log' % (filename_filter(album_artist), filename_filter(album)))
@@ -245,7 +245,7 @@ elif len(log_paths) == 1:
 
 cue_paths = [f for f in paths if f.lower().endswith('.cue')]
 if len(cue_paths) > 1:
-    printf('Multiple cue files; not renaming.')
+    print('Multiple cue files; not renaming.')
 elif len(cue_paths) == 1:
     cue_path = cue_paths[0]
     new_cue_path = os.path.join(os.path.dirname(cue_path), '%s.cue' % (filename_filter(album)))
