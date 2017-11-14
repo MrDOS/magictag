@@ -175,7 +175,16 @@ for log_path in log_paths:
             time_string = opt2 if opt2 is not None else opt1
             rip_time = dateutil.parser.parse(time_string).timestamp()
 
-for extra_path in [f for f in paths if f.lower().split('.')[-1] in ('cue', 'jpg', 'log')]:
+info_paths = [f for f in paths if os.path.basename(f.lower()) == 'info.txt']
+for info_path in info_paths:
+    with open(info_path, 'r') as info_file:
+        info = info_file.read()
+        info_time_match = re.search('NFO generated on.....: (?P<time>.+)', info)
+        if info_time_match is not None:
+            time_string = info_time_match.groups('time')[0]
+            rip_time = dateutil.parser.parse(time_string).timestamp()
+
+for extra_path in [f for f in paths if f.lower().split('.')[-1] in ('cue', 'jpg', 'png', 'log', 'txt')]:
     if rip_time is not None:
         os.utime(extra_path, times=(access_time, rip_time))
     os.chmod(extra_path, 0o644)
