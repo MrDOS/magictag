@@ -72,11 +72,12 @@ def generate_filename(song):
 
 def filename_filter(value):
     value = re.sub(r'[<>:/\|]', '-', value)
-    value = re.sub(r'["]', '\'', value)
-    value = re.sub(r'[?*]', '_', value)
-    # If we had a special character at the very end of the value, just drop it.
-    # Same for trailing full stops.
-    value = re.sub(r'[_.]$', '', value)
+    value = value.replace('"', "'")
+    value = re.sub(r'[?*.]', '_', value)
+    # If we have trailing special characters at the beginning or end, just drop
+    # them (unless the entire name consists of special characters/symbols).
+    if re.search(r'[0-9A-Za-z]', value):
+        value = re.sub('^_*(.*?)_*$', r'\1', value)
     return value
 
 def fetch_itunes_album_art(album_artist, album, filename):
