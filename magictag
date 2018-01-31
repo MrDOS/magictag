@@ -269,7 +269,14 @@ elif len(cue_paths) == 1:
     os.rename(cue_path, new_cue_path)
 
 if whole_directory:
-    if len([f for f in paths if f.lower().endswith('.jpg')]) == 0:
+    image_paths = [f for f in paths if f.lower().split('.')[-1] in ('jpg', 'jpeg')]
+    if len(image_paths) > 1:
+        print('Multiple image files; not renaming.')
+    elif len(image_paths) == 1:
+        image_path = image_paths[0]
+        new_image_path = os.path.join(os.path.dirname(image_path), 'folder.jpg')
+        os.rename(image_path, new_image_path)
+    else:
         print('Fetching artwork...')
         artwork_path = os.path.join(directory, 'folder.jpg')
         artwork_path = fetch_itunes_album_art(album_artist, album, artwork_path)
