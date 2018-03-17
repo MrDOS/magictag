@@ -75,7 +75,7 @@ def generate_filename(song):
     return os.path.join(path, '%02d - %s.flac' % (track_number, title))
 
 def filename_filter(value):
-    value = re.sub(r'[<>:/\|]', '-', value)
+    value = re.sub(r'[<>:/\\\|]', '-', value)
     value = value.replace('"', "'")
     value = re.sub(r'[?*]', '_', value)
     # If we have trailing special characters at the beginning or end, just drop
