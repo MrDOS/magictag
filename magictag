@@ -177,13 +177,25 @@ log_paths = [f for f in paths if f.lower().endswith('.log')]
 for log_path in log_paths:
     with open(log_path, 'rb') as log_file:
         log_raw = log_file.read()
-        charset = chardet.detect(log_raw)
-        log = log_raw.decode(charset['encoding'])
-        rip_time_match = re.search('extraction logfile from ((.+)( for .*)|(.+))', log)
-        if rip_time_match is not None:
-            opt1, opt2, _, _ = rip_time_match.groups()
-            time_string = opt2 if opt2 is not None else opt1
-            rip_time = dateutil.parser.parse(time_string).timestamp()
+        log = None
+
+        charsets = (chardet.detect(log_raw)['encoding'], 'UTF-8', 'ASCII')
+        for charset in charsets:
+            try:
+                log = log_raw.decode(charset)
+                print('Decoded the log as %s.' % charset)
+                break
+            except UnicodeDecodeError:
+                print("Tried to decode the log as %s, but failed!" % charset)
+
+        if log is None:
+            print('Failed to decode the log. Skipping log parsing.')
+        else:
+            rip_time_match = re.search('extraction logfile from ((.+)( for .*)|(.+))', log)
+            if rip_time_match is not None:
+                opt1, opt2, _, _ = rip_time_match.groups()
+                time_string = opt2 if opt2 is not None else opt1
+                rip_time = dateutil.parser.parse(time_string).timestamp()
 
 info_paths = [f for f in paths if os.path.basename(f.lower()) == 'info.txt']
 for info_path in info_paths:
