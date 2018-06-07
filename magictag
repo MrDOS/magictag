@@ -48,6 +48,9 @@ def generate_sort(tag, tags):
         value = value[4:] + ', The'
 
     value = re.sub(r'(\w)!(\w)', r'\1i\2', value)
+    # “KoЯn” → “Korn”
+    value = value.replace('Я', 'r')
+    # Ke$ha” → “Kesha”
     value = value.replace('$', 's')
 
     if value != reference_value:
