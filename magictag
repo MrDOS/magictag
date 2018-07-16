@@ -139,7 +139,7 @@ RENAME_TAGS = {
 FILTER_TAGS = {
     'ALBUMARTIST': artist_titlecase,
     'ALBUM': tag_titlecase,
-    'DATE': lambda year: int(year[0:4]),
+    'DATE': lambda year: int(year[0:4]) if len(year) > 0 else None,
     'DISCNUMBER': lambda number: int(number.split('/')[0]),
     'DISCTOTAL': int,
     'GENRE': tag_titlecase,
