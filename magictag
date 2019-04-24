@@ -16,7 +16,8 @@ import sys
 from titlecase import titlecase
 import urllib.request
 
-FEAT_PATTERN = re.compile(r' \((?P<term>feat\.|with) (?P<feature>.+?)\)', re.IGNORECASE)
+FEAT_TERMS = ['feat.', 'with']
+FEAT_PATTERN = re.compile(r' \(?(?P<term>' + '|'.join([term.replace('.', '\.') for term in FEAT_TERMS]) + ') (?P<feature>.+?)\)?', re.IGNORECASE)
 DO_TITLECASE = False
 
 def tag_titlecase(title, **kwargs):
@@ -32,7 +33,7 @@ def tag_titlecase(title, **kwargs):
 def artist_titlecase(title):
     title = re.sub(r'\(featuring ', '(feat. ', title, flags=re.IGNORECASE)
     def titlecase_callback(word,  **kwargs):
-        if word.lower() in ['with', 'from', 'feat.', 'la'] and not titlecase_callback.first_word:
+        if word.lower() in ['from', 'la'] + FEAT_TERMS and not titlecase_callback.first_word:
             return word.lower()
         titlecase_callback.first_word = False
     titlecase_callback.first_word = True
@@ -44,8 +45,12 @@ def generate_sort(tag, tags):
     reference_value = tags[base_tag]
     value = reference_value
 
-    if value[:4] == 'The ':
-        value = value[4:] + ', The'
+    if value[:len('The ')] == 'The ':
+        insert_point = len(value)
+        featuring = FEAT_PATTERN.search(value)
+        if featuring is not None:
+            insert_point = featuring.span()[0]
+        value = value[len('The '):insert_point] + ', The' + value[insert_point:]
 
     value = re.sub(r'(\w)!(\w)', r'\1i\2', value)
     # “KoЯn” → “Korn”
