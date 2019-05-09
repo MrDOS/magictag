@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.37.0'
+__version__ = '0.40.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -23,8 +23,9 @@ import sys
 from titlecase import titlecase
 import urllib.request
 
-FEAT_TERMS = ['feat.', 'with']
-FEAT_PATTERN = re.compile(r' \(?(?P<term>' + '|'.join([term.replace('.', '\.') for term in FEAT_TERMS]) + ') (?P<feature>[^)]+)\)?', re.IGNORECASE)
+FEAT_TERMS = ['feat.']
+MAYBE_FEAT_TERMS = ['with']
+FEAT_PATTERN = lambda: re.compile(r' \(?(?P<term>' + '|'.join([term.replace('.', '\.') for term in FEAT_TERMS]) + ') (?P<feature>[^)]+)\)?', re.IGNORECASE)
 DO_TITLECASE = False
 
 def tag_titlecase(title, **kwargs):
@@ -54,7 +55,7 @@ def generate_sort(tag, tags):
 
     if value[:len('The ')] == 'The ':
         insert_point = len(value)
-        featuring = FEAT_PATTERN.search(value)
+        featuring = FEAT_PATTERN().search(value)
         if featuring is not None:
             insert_point = featuring.span()[0]
         value = value[len('The '):insert_point] + ', The' + value[insert_point:]
@@ -69,17 +70,18 @@ def generate_sort(tag, tags):
         return value
 
 def generate_artist(tag, tags):
-    title_featuring = FEAT_PATTERN.search(tags['TITLE'])
-    artist_featuring = FEAT_PATTERN.search(tags['ARTIST'])
+    title_featuring = FEAT_PATTERN().search(tags['TITLE'])
+    artist_featuring = FEAT_PATTERN().search(tags['ARTIST'])
     if title_featuring is None or artist_featuring is not None:
         return tags['ARTIST']
 
     return tags['ARTIST'] + ' ' + title_featuring.group('term').lower() + ' ' + title_featuring.group('feature')
 
 def generate_title(tag, tags):
-    title_featuring = FEAT_PATTERN.search(tags[tag])
+    title_featuring = FEAT_PATTERN().search(tags[tag])
     if title_featuring is None:
         return tags[tag]
+    print(title_featuring)
 
     return tags[tag][:title_featuring.span()[0]] + tags[tag][title_featuring.span()[1]:]
 
@@ -175,6 +177,8 @@ GENERATE_TAGS = OrderedDict([
 ])
 
 def main():
+    global FEAT_TERMS, MAYBE_FEAT_TERMS, DO_TITLECASE
+
     flags = [flag[2:] for flag in sys.argv[1:] if flag.startswith('--')]
     paths = [path for path in sys.argv[1:] if not path.startswith('--')]
     directory = None
@@ -237,6 +241,9 @@ def main():
             whole_directory = True
 
     song_paths = [f for f in paths if f.lower().endswith('.flac')]
+
+    if 'with-as-feature-term' in flags:
+        FEAT_TERMS += MAYBE_FEAT_TERMS
 
     if 'fix-title-case' in flags:
         DO_TITLECASE = True
