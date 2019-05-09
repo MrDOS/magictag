@@ -1,5 +1,15 @@
 #! /usr/bin/env python3
 
+"""
+Magically retag FLAG files.
+"""
+
+__version__ = '0.37.0'
+
+__author__ = 'Samuel Coleman'
+__contact__ = 'samuel@seenet.ca'
+__license__ = 'WTFPL'
+
 import chardet
 from datetime import datetime
 import dateutil.parser
@@ -164,9 +174,9 @@ GENERATE_TAGS = OrderedDict([
     ('TRACKTOTAL', lambda tag, tags: len(songs) if tags[tag] is None else tags[tag])
 ])
 
-def main(argv):
-    flags = [flag[2:] for flag in argv[1:] if flag.startswith('--')]
-    paths = [path for path in argv[1:] if not path.startswith('--')]
+def main():
+    flags = [flag[2:] for flag in sys.argv[1:] if flag.startswith('--')]
+    paths = [path for path in sys.argv[1:] if not path.startswith('--')]
     directory = None
     whole_directory = False
 
@@ -321,4 +331,4 @@ def main(argv):
     return 0
 
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    sys.exit(main())
