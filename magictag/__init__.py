@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.40.0'
+__version__ = '0.41.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -41,7 +41,7 @@ def tag_titlecase(title, **kwargs):
 def artist_titlecase(title):
     title = re.sub(r'\(featuring ', '(feat. ', title, flags=re.IGNORECASE)
     def titlecase_callback(word,  **kwargs):
-        if word.lower() in ['from', 'la'] + FEAT_TERMS and not titlecase_callback.first_word:
+        if word.lower() in ['from', 'la', 'with'] + FEAT_TERMS and not titlecase_callback.first_word:
             return word.lower()
         titlecase_callback.first_word = False
     titlecase_callback.first_word = True
