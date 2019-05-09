@@ -24,7 +24,7 @@ from titlecase import titlecase
 import urllib.request
 
 FEAT_TERMS = ['feat.', 'with']
-FEAT_PATTERN = re.compile(r' \(?(?P<term>' + '|'.join([term.replace('.', '\.') for term in FEAT_TERMS]) + ') (?P<feature>.+?)\)?', re.IGNORECASE)
+FEAT_PATTERN = re.compile(r' \(?(?P<term>' + '|'.join([term.replace('.', '\.') for term in FEAT_TERMS]) + ') (?P<feature>[^)]+)\)?', re.IGNORECASE)
 DO_TITLECASE = False
 
 def tag_titlecase(title, **kwargs):
@@ -77,11 +77,11 @@ def generate_artist(tag, tags):
     return tags['ARTIST'] + ' ' + title_featuring.group('term').lower() + ' ' + title_featuring.group('feature')
 
 def generate_title(tag, tags):
-    title_featuring = FEAT_PATTERN.search(tags['TITLE'])
+    title_featuring = FEAT_PATTERN.search(tags[tag])
     if title_featuring is None:
-        return tags['TITLE']
+        return tags[tag]
 
-    return tags['TITLE'][:title_featuring.span()[0]] + tags['TITLE'][title_featuring.span()[1]:]
+    return tags[tag][:title_featuring.span()[0]] + tags[tag][title_featuring.span()[1]:]
 
 def generate_filename(song):
     path = os.path.dirname(song.filename)
