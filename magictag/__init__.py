@@ -48,7 +48,7 @@ def artist_titlecase(title):
 
     return ' / '.join([tag_titlecase(part, callback=titlecase_callback) for part in title.split(' / ')])
 
-def generate_sort(tag, tags):
+def generate_sort(tag, tags, songs):
     base_tag = tag[:-4]
     reference_value = tags[base_tag]
     value = reference_value
@@ -69,7 +69,7 @@ def generate_sort(tag, tags):
     if value != reference_value:
         return value
 
-def generate_artist(tag, tags):
+def generate_artist(tag, tags, songs):
     title_featuring = FEAT_PATTERN().search(tags['TITLE'])
     artist_featuring = FEAT_PATTERN().search(tags['ARTIST'])
     if title_featuring is None or artist_featuring is not None:
@@ -77,7 +77,7 @@ def generate_artist(tag, tags):
 
     return tags['ARTIST'] + ' ' + title_featuring.group('term').lower() + ' ' + title_featuring.group('feature')
 
-def generate_title(tag, tags):
+def generate_title(tag, tags, songs):
     title_featuring = FEAT_PATTERN().search(tags[tag])
     if title_featuring is None:
         return tags[tag]
@@ -165,15 +165,15 @@ FILTER_TAGS = {
 }
 
 GENERATE_TAGS = OrderedDict([
-    ('ALBUMARTIST', lambda tag, tags: tags['ARTIST'] if tags[tag] is None else tags[tag]),
+    ('ALBUMARTIST', lambda tag, tags, songs: tags['ARTIST'] if tags[tag] is None else tags[tag]),
     ('ALBUMARTISTSORT', generate_sort),
     ('ARTIST', generate_artist),
     ('ALBUMSORT', generate_sort),
     ('ARTISTSORT', generate_sort),
     ('TITLE', generate_title),
-    ('DISCNUMBER', lambda tag, tags: 1 if tags[tag] is None else tags[tag]),
-    ('DISCTOTAL', lambda tag, tags: 1 if tags[tag] is None else tags[tag]),
-    ('TRACKTOTAL', lambda tag, tags: len(songs) if tags[tag] is None else tags[tag])
+    ('DISCNUMBER', lambda tag, tags, songs: 1 if tags[tag] is None else tags[tag]),
+    ('DISCTOTAL', lambda tag, tags, songs: 1 if tags[tag] is None else tags[tag]),
+    ('TRACKTOTAL', lambda tag, tags, songs: len(songs) if tags[tag] is None else tags[tag])
 ])
 
 def main():
@@ -274,7 +274,7 @@ def main():
             tags[tag] = value
 
         for tag in GENERATE_TAGS:
-            tags[tag] = GENERATE_TAGS[tag](tag, tags)
+            tags[tag] = GENERATE_TAGS[tag](tag, tags, songs)
 
         album_artist = tags['ALBUMARTIST']
         album = tags['ALBUM']
