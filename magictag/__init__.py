@@ -81,7 +81,6 @@ def generate_title(tag, tags, songs):
     title_featuring = FEAT_PATTERN().search(tags[tag])
     if title_featuring is None:
         return tags[tag]
-    print(title_featuring)
 
     return tags[tag][:title_featuring.span()[0]] + tags[tag][title_featuring.span()[1]:]
 
