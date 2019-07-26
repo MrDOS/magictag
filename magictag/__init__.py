@@ -23,7 +23,7 @@ import sys
 from titlecase import titlecase
 import urllib.request
 
-FEAT_TERMS = ['feat.']
+FEAT_TERMS = ['feat.', 'ft.']
 MAYBE_FEAT_TERMS = ['with']
 FEAT_PATTERN = lambda: re.compile(r' \(?(?P<term>' + '|'.join([term.replace('.', '\.') for term in FEAT_TERMS]) + ') (?P<feature>[^)]+)\)?', re.IGNORECASE)
 DO_TITLECASE = False
