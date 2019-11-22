@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.41.0'
+__version__ = '0.45.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -268,12 +268,18 @@ def main():
                 continue
 
             if tag in FILTER_TAGS:
-                value = FILTER_TAGS[tag](value)
+                try:
+                    value = FILTER_TAGS[tag](value)
+                except ValueError as e:
+                    print(f'Error filtering value for tag {tag} of song {song.filename}: {e}')
 
             tags[tag] = value
 
         for tag in GENERATE_TAGS:
-            tags[tag] = GENERATE_TAGS[tag](tag, tags, songs)
+            try:
+                tags[tag] = GENERATE_TAGS[tag](tag, tags, songs)
+            except ValueError as e:
+                printf(f'Error generating value for tag {tag} of song {song.filename}: {e}')
 
         album_artist = tags['ALBUMARTIST']
         album = tags['ALBUM']
