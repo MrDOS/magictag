@@ -70,6 +70,7 @@ def generate_sort(tag, tags, songs):
             insert_point = featuring.span()[0]
         value = value[len('The '):insert_point] + ', The' + value[insert_point:]
 
+    # “P!nk” → “Pink”, but no change to “Godspeed You! Black Emperor”
     value = re.sub(r'(\w)!(\w)', r'\1i\2', value)
     # “KoЯn” → “Korn”
     value = value.replace('Я', 'r')
