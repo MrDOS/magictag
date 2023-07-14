@@ -4,16 +4,16 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.47.0'
+__version__ = '0.48.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
 __license__ = 'WTFPL'
 
 import chardet
+from collections import abc, OrderedDict
 from datetime import datetime
 import dateutil.parser
-from collections import OrderedDict
 import mutagen
 import os
 import os.path
@@ -27,6 +27,16 @@ FEAT_TERMS = ['feat.', 'ft.']
 MAYBE_FEAT_TERMS = ['with']
 FEAT_PATTERN = lambda: re.compile(r' \(?(?P<term>' + '|'.join([term.replace('.', '\.') for term in FEAT_TERMS]) + ') (?P<feature>[^)]+)\)?', re.IGNORECASE)
 DO_TITLECASE = False
+
+def fix_curly_apostrophes(term):
+    """Replace single curly quotes with apostrophes, as God intented."""
+    # If we were very clever, we'd ignore the outermost matched pairs of
+    # single quotes and only replace unmatched right single quotes (e.g.,
+    # s/‘We’re a long way from home’/‘We're a long way from home’/. However,
+    # across my whole music library, the only instance of a left single quote
+    # is a typo clearly intended to be a right single quote, and which should
+    # be an apostrophe anyway.
+    return re.sub('[‘’]', "'", term)
 
 def tag_titlecase(title, **kwargs):
     if not DO_TITLECASE:
@@ -151,13 +161,13 @@ RENAME_TAGS = {
 
 FILTER_TAGS = {
     'ALBUMARTIST': artist_titlecase,
-    'ALBUM': tag_titlecase,
+    'ALBUM': [fix_curly_apostrophes, tag_titlecase],
     'DATE': lambda year: int(year[0:4]) if len(year) > 0 else None,
     'DISCNUMBER': lambda number: int(number.split('/')[0]),
     'DISCTOTAL': int,
     'GENRE': tag_titlecase,
     'ARTIST': artist_titlecase,
-    'TITLE': artist_titlecase,
+    'TITLE': [fix_curly_apostrophes, artist_titlecase],
     'COMPOSER': tag_titlecase,
     'PERFORMER': tag_titlecase,
     'TRACKNUMBER': lambda number: int(number.split('/')[0]),
@@ -269,10 +279,15 @@ def main():
                 continue
 
             if tag in FILTER_TAGS:
-                try:
-                    value = FILTER_TAGS[tag](value)
-                except ValueError as e:
-                    print(f'Error filtering value for tag {tag} of song {song.filename}: {e}')
+                filters = FILTER_TAGS[tag]
+                if not isinstance(filters, abc.Sequence):
+                    filters = [filters]
+
+                for tag_filter in filters:
+                    try:
+                        value = tag_filter(value)
+                    except ValueError as e:
+                        print(f'Error filtering value for tag {tag} of song {song.filename}: {e}')
 
             tags[tag] = value
 
