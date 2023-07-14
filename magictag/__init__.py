@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.46.0'
+__version__ = '0.47.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -156,6 +156,7 @@ FILTER_TAGS = {
     'DISCNUMBER': lambda number: int(number.split('/')[0]),
     'DISCTOTAL': int,
     'GENRE': tag_titlecase,
+    'ARTIST': artist_titlecase,
     'TITLE': artist_titlecase,
     'COMPOSER': tag_titlecase,
     'PERFORMER': tag_titlecase,
