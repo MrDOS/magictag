@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.45.0'
+__version__ = '0.46.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -120,7 +120,7 @@ def fetch_itunes_album_art(album_artist, album, filename):
     urllib.request.urlretrieve(high_res, filename)
     return filename
 
-DEFALT_TAGS = OrderedDict.fromkeys([
+ALLOWED_TAGS = OrderedDict.fromkeys([
     'ALBUMARTIST',
     'ALBUMARTISTSORT',
     'ALBUM',
@@ -257,7 +257,7 @@ def main():
     album_date = None
     print('Tagging...')
     for song in songs:
-        tags = DEFALT_TAGS.copy()
+        tags = ALLOWED_TAGS.copy()
         for tag, value in song.tags:
             tag = tag.upper()
 
