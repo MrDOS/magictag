@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.48.0'
+__version__ = '0.49.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -81,12 +81,13 @@ def generate_sort(tag, tags, songs):
         return value
 
 def generate_artist(tag, tags, songs):
+    artist = tags['ARTIST'].strip()
     title_featuring = FEAT_PATTERN().search(tags['TITLE'])
-    artist_featuring = FEAT_PATTERN().search(tags['ARTIST'])
+    artist_featuring = FEAT_PATTERN().search(artist)
     if title_featuring is None or artist_featuring is not None:
-        return tags['ARTIST']
+        return artist
 
-    return tags['ARTIST'] + ' ' + title_featuring.group('term').lower() + ' ' + title_featuring.group('feature')
+    return artist + ' ' + title_featuring.group('term').lower() + ' ' + title_featuring.group('feature')
 
 def generate_title(tag, tags, songs):
     title_featuring = FEAT_PATTERN().search(tags[tag])
@@ -162,13 +163,13 @@ RENAME_TAGS = {
 
 FILTER_TAGS = {
     'ALBUMARTIST': artist_titlecase,
-    'ALBUM': [fix_curly_apostrophes, tag_titlecase],
+    'ALBUM': [str.strip, fix_curly_apostrophes, tag_titlecase],
     'DATE': lambda year: int(year[0:4]) if len(year) > 0 else None,
     'DISCNUMBER': lambda number: int(number.split('/')[0]),
     'DISCTOTAL': int,
     'GENRE': tag_titlecase,
     'ARTIST': artist_titlecase,
-    'TITLE': [fix_curly_apostrophes, artist_titlecase],
+    'TITLE': [str.strip, fix_curly_apostrophes, artist_titlecase],
     'COMPOSER': tag_titlecase,
     'PERFORMER': tag_titlecase,
     'TRACKNUMBER': lambda number: int(number.split('/')[0]),
