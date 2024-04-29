@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "magictag"
+dynamic = ["version", "dependencies"]
+
+description = "Magically retag FLAG files."
+readme = "README.rst"
+
+authors = [{name = "Samuel Coleman", email = "samuel@seenet.ca"}]
+
+license = {file = "LICENSE"}
+
+classifiers = [
+    "Development Status :: 6 - Mature",
+    "Topic :: Multimedia :: Sound/Audio",
+    "Topic :: Utilities",
+]
+
+[project.urls]
+Homepage = "https://github.com/MrDOS/magictag"
+
+[project.scripts]
+magictag = "magictag:main"
+
+[tool.setuptools.dynamic]
+version = {attr = "magictag.__version__"}
+dependencies = {file = "requirements.txt"}
