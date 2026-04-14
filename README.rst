@@ -38,11 +38,7 @@ Among other things, it:
 * Sets the ``mtime`` of files and the directory
   to the rip timestamp found in a EAC/XLD/info.txt log file,
   if present.
-* Fetches high-resolution album artwork from iTunes
-  (if python-itunes_ is installed –
-  it isn't installed by ``./setup.py install``,
-  because the version on PyPI
-  does not support Python 3).
+* Fetches high-resolution album artwork from iTunes.
 * Renames album artwork to ``folder.jpg``.
 
 All of these things happen on every invocation.
@@ -54,8 +50,6 @@ to ensure a consistent baseline
 before doing manual tagging,
 and then again afterwards
 to ensure consistent tag layout.
-
-.. _python-itunes: https://github.com/talolard/python-itunes
 
 Status
 ======

@@ -1,5 +1,5 @@
 chardet
 mutagen
 python-dateutil
-python-itunes @ git+https://github.com/MrDOS/python-itunes@python3-compatibility
+python-itunes @ git+https://github.com/ocelma/python-itunes
 titlecase
