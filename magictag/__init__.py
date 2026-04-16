@@ -309,7 +309,7 @@ def main():
             try:
                 tags[tag] = GENERATE_TAGS[tag](tag, tags, songs)
             except ValueError as e:
-                printf(f'Error generating value for tag {tag} of song {song.filename}: {e}')
+                print(f'Error generating value for tag {tag} of song {song.filename}: {e}')
 
         album_artist = tags['ALBUMARTIST']
         album = tags['ALBUM']
