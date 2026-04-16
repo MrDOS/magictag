@@ -4,12 +4,13 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.50.0'
+__version__ = '0.51.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
 __license__ = 'WTFPL'
 
+import argparse
 import chardet
 from collections import abc, OrderedDict
 from datetime import datetime
@@ -208,8 +209,28 @@ GENERATE_TAGS = OrderedDict([
 def main():
     global FEAT_TERMS, MAYBE_FEAT_TERMS, DO_TITLECASE
 
-    flags = [flag[2:] for flag in sys.argv[1:] if flag.startswith('--')]
-    paths = [path for path in sys.argv[1:] if not path.startswith('--')]
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+        "--with-as-feature-term",
+        action="store_true",
+        help="treat “with” as a term for featured artists",
+    )
+    parser.add_argument(
+        "--fix-title-case", action="store_true", help="fix tag capitalization"
+    )
+    parser.add_argument(
+        "--add-replay-gain",
+        action="store_true",
+        help="calculate track/album ReplayGain",
+    )
+    parser.add_argument(
+        "paths", metavar="path", nargs="+",
+        help="directory or tracks to magic"
+    )
+
+    args = parser.parse_args()
+    paths = args.paths
     directory = None
     whole_directory = False
 
@@ -271,13 +292,13 @@ def main():
 
     song_paths = [f for f in paths if f.lower().endswith('.flac')]
 
-    if 'with-as-feature-term' in flags:
+    if args.with_as_feature_term:
         FEAT_TERMS += MAYBE_FEAT_TERMS
 
-    if 'fix-title-case' in flags:
+    if args.fix_title_case:
         DO_TITLECASE = True
 
-    if 'add-replay-gain' in flags:
+    if args.add_replay_gain:
         print('Calculating ReplayGain...')
         subprocess.run(['metaflac', '--add-replay-gain'] + song_paths)
 

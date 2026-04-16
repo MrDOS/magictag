@@ -23,7 +23,8 @@ Among other things, it:
   (with the ``--fix-title-case`` flag).
 * Moves featured artists from the title tag to the artist tag.
   (Looks for “feat.”/“ft.” by default,
-  but also handles “with” with the ``--with-as-feature-term`` flag.)
+  but also handles “with” with the ``--with-as-feature-term`` flag –
+  see below.)
 * Adds artist and album sort tags
   (e.g., strips “The” prefixes,
   replaces “style characters” like “$” with their sortable equivalents).
@@ -50,6 +51,46 @@ to ensure a consistent baseline
 before doing manual tagging,
 and then again afterwards
 to ensure consistent tag layout.
+
+Feature terms
+-------------
+
+Artist features on tracks
+are very often indicated with a TITLE tag suffix
+rather than an appropriate ARTIST tag.
+E.g., “Backseat” by Charli XCX featuring Carly Rae Jepsen might be tagged::
+
+  ARTIST=Charli XCX
+  TITLE=Backseat (ft. Carly Rae Jepsen)
+
+Magictag prefers::
+
+  ALBUMARTIST=Charli XCX
+  ARTIST=Charli XCX feat. Carly Rae Jepsen
+  TITLE=Backseat
+
+To accomplish this,
+it searches track TITLEs
+for potentially-parenthetical instances
+of “feat.” and “ft.” –
+“feature terms” –
+and, if found, appends the trailing text to the ARTIST.
+(There is also a very gross special case for “(featuring”.)
+
+Sometimes, “with” is used as a feature term,
+usually when the artists involved
+have collaborated much more closely on the songwriting process
+(e.g., “Demons” by Fatboy Slim with Macy Gray).
+When passed the ``--with-as-feature-term`` flag,
+Magictag will treat “with” as a feature term, too.
+Mostly, this just causes errors,
+because the additional term is handled the same way as the others,
+and so it turns “Rock with You” by Michael Jackson
+into “Rock” by Michael Jackson with You.
+Very occasionally, though,
+you'll encounter an album with a lot of tracks “with” another artist
+(e.g., all 12 tracks on “Don't Get Too Close” by Skrillex),
+and then it can be helpful.
 
 Status
 ======
