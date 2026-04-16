@@ -25,7 +25,12 @@ import urllib.request
 
 FEAT_TERMS = ['feat.', 'ft.']
 MAYBE_FEAT_TERMS = ['with']
-FEAT_PATTERN = lambda: re.compile(r' \(?(?P<term>' + '|'.join([term.replace('.', '\.') for term in FEAT_TERMS]) + ') (?P<feature>[^)]+)\)?', re.IGNORECASE)
+FEAT_PATTERN = lambda: re.compile(
+    r' \(?(?P<term>'
+    + '|'.join([term.replace('.', r'\.') for term in FEAT_TERMS])
+    + r') (?P<feature>[^)]+)\)?',
+    re.IGNORECASE,
+)
 DO_TITLECASE = False
 
 def fix_curly_apostrophes(term):
@@ -114,7 +119,7 @@ def filename_filter(value):
     # If we have trailing special characters at the beginning or end, just drop
     # them (unless the entire name consists of special characters/symbols).
     if re.search(r'[0-9A-Za-z]', value):
-        value = re.sub('^[\._]*(.*?)[\._]*$', r'\1', value)
+        value = re.sub(r'^[\._]*(.*?)[\._]*$', r'\1', value)
     return value
 
 def fetch_itunes_album_art(album_artist, album, filename):
