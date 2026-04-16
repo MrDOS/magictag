@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.49.0'
+__version__ = '0.50.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -124,12 +124,24 @@ def fetch_itunes_album_art(album_artist, album, filename):
         print('Couldn\'t load the "itunes" module! Skipping art retrieval.')
         return
 
-    albums = itunes.search_album('%s %s' % (album_artist, album))
+    try:
+        albums = itunes.search_album('%s %s' % (album_artist, album))
+    except Exception as e:
+        print('Failure searching for album art (%s)! Skipping art retrieval.' % e)
+        return
+
     if not len(albums):
+        print('No iTunes search results. Continuing without album art.')
         return
     _, low_res = albums[0].get_artwork().popitem()
-    high_res = low_res[:low_res.rindex('/') + 1] + '100000x100000-999.jpg'
-    urllib.request.urlretrieve(high_res, filename)
+    high_res = low_res[:low_res.rindex('/') + 1] + '10000x10000-999.jpg'
+
+    try:
+        urllib.request.urlretrieve(high_res, filename)
+    except Exception as e:
+        print('Found iTunes match, but failed to retrieve the album art (%s)! Continuing without it.' % e)
+        return
+
     return filename
 
 ALLOWED_TAGS = OrderedDict.fromkeys([
