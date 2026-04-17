@@ -24,6 +24,11 @@ import sys
 from titlecase import titlecase
 import urllib.request
 
+ARTWORK_EXTENSIONS = ("jpg", "jpeg")
+"""Accept files with these extensions as album artwork."""
+TOUCH_EXTENSIONS = ("cue", "png", "log", "txt") + ARTWORK_EXTENSIONS
+"""Files with these extensions should have their mtimes matched to the log."""
+
 FEAT_TERMS = ['feat.', 'ft.']
 MAYBE_FEAT_TERMS = ['with']
 FEAT_PATTERN = lambda: re.compile(
@@ -240,10 +245,12 @@ def main():
         paths = [os.path.join(directory, f) for f in os.listdir(directory)]
         print('"%s" is a directory. Processing its entire contents.' % directory)
 
+    paths_exts = [(path, path.split(".")[-1].lower()) for path in paths]
+
     access_time = datetime.now().timestamp()
     rip_time = None
 
-    log_paths = [f for f in paths if f.lower().endswith('.log')]
+    log_paths = [path[0] for path in paths_exts if path[1] == "log"]
     for log_path in log_paths:
         with open(log_path, 'rb') as log_file:
             log_raw = log_file.read()
@@ -276,10 +283,10 @@ def main():
                 time_string = info_time_match.groups('time')[0]
                 rip_time = dateutil.parser.parse(time_string).timestamp()
 
-    for extra_path in [f for f in paths if f.lower().split('.')[-1] in ('cue', 'jpg', 'png', 'log', 'txt')]:
+    for touch_path in [path[0] for path in paths_exts if path[1] in TOUCH_EXTENSIONS]:
         if rip_time is not None:
-            os.utime(extra_path, times=(access_time, rip_time))
-        os.chmod(extra_path, 0o644)
+            os.utime(touch_path, times=(access_time, rip_time))
+        os.chmod(touch_path, 0o644)
 
     path_directories = list(set([os.path.dirname(path) for path in paths]))
     if directory is None and len(path_directories) == 1:
@@ -290,7 +297,7 @@ def main():
         if path_filenames == directory_filenames:
             whole_directory = True
 
-    song_paths = [f for f in paths if f.lower().endswith('.flac')]
+    song_paths = [path[0] for path in paths_exts if path[1] == "flac"]
 
     if args.with_as_feature_term:
         FEAT_TERMS += MAYBE_FEAT_TERMS
@@ -361,7 +368,7 @@ def main():
         new_log_path = os.path.join(os.path.dirname(log_path), '%s - %s.log' % (filename_filter(album_artist), filename_filter(album)))
         os.rename(log_path, new_log_path)
 
-    cue_paths = [f for f in paths if f.lower().endswith('.cue')]
+    cue_paths = [path[0] for path in paths_exts if path[1] == "cue"]
     if len(cue_paths) > 1:
         print('Multiple cue files; not renaming.')
     elif len(cue_paths) == 1:
@@ -370,7 +377,7 @@ def main():
         os.rename(cue_path, new_cue_path)
 
     if whole_directory:
-        image_paths = [f for f in paths if f.lower().split('.')[-1] in ('jpg', 'jpeg')]
+        image_paths = [path[0] for path in paths_exts if path[1] in ARTWORK_EXTENSIONS]
         if len(image_paths) > 1:
             print('Multiple image files; not renaming.')
         elif len(image_paths) == 1:
