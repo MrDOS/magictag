@@ -1,4 +1,5 @@
 chardet
+humanize
 mutagen
 python-dateutil
 python-itunes @ git+https://github.com/ocelma/python-itunes

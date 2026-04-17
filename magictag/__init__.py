@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.51.0'
+__version__ = '0.52.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -15,12 +15,15 @@ import chardet
 from collections import abc, OrderedDict
 from datetime import datetime
 import dateutil.parser
+import functools
+import humanize
 import mutagen
 import os
 import os.path
 import re
 import subprocess
 import sys
+import tempfile
 from titlecase import titlecase
 import urllib.request
 
@@ -30,7 +33,7 @@ ARTWORK_EXTENSION_REPLACEMENTS = {"jpeg": "jpg"}
 """When renaming artwork, remap these extensions."""
 ARTWORK_FORMAT = "folder.{}"
 """Desired filename format for a single artwork file."""
-TOUCH_EXTENSIONS = ("cue", "log", "txt") + ARTWORK_EXTENSIONS
+TOUCH_EXTENSIONS = ("cue", "log", "txt")
 """Files with these extensions should have their mtimes matched to the log."""
 
 FEAT_TERMS = ['feat.', 'ft.']
@@ -204,6 +207,65 @@ def fetch_itunes_album_art(album_artist, album, filename_format):
 
     return filename
 
+def optimize_image(path_ext):
+    path, ext = path_ext
+
+    print(f"Optimizing {path}...")
+
+    fd, temp_path = tempfile.mkstemp(suffix=f".{ext}", dir=os.path.dirname(path))
+    os.close(fd)
+
+    if ext in ("jpg", "jpeg"):
+        optimize_jpg(path, temp_path)
+    elif ext == "png":
+        optimize_png(path, temp_path)
+    else:
+        print(f"{path}: unrecognized extension '{ext}'; not optimizing.")
+        os.unlink(temp_path)
+        return
+
+    old_size = os.stat(path).st_size
+    new_size = os.stat(temp_path).st_size
+    delta_size = old_size - new_size
+    delta_percent = (1 - (new_size / old_size)) * 100
+
+    os.rename(temp_path, path)
+
+    print(
+        f"{path}: saved {humanize.naturalsize(old_size)} "
+        f"- {humanize.naturalsize(new_size)} "
+        f"= {humanize.naturalsize(delta_size)} ({delta_percent:.1f}%)."
+    )
+
+@functools.cache
+def _check_mozjpeg():
+    completion = subprocess.run(["jpegtran", "-version"], capture_output=True)
+
+    if not b"mozjpeg" in completion.stderr:
+        print(
+            "warning: not using MozJPEG jpegtran, so optimized JPEGs will not "
+            "be as small as possible"
+        )
+
+def optimize_jpg(input_path, output_path):
+    _check_mozjpeg()
+
+    subprocess.run(
+        [
+            "jpegtran",
+            "-optimize",
+            "-progressive",
+            "-copy",
+            "icc",
+            "-outfile",
+            output_path,
+            input_path,
+        ]
+    )
+
+def optimize_png(input_path, output_path):
+    subprocess.run(["pngout", "-y", input_path, output_path])
+
 ALLOWED_TAGS = OrderedDict.fromkeys([
     'ALBUMARTIST',
     'ALBUMARTISTSORT',
@@ -277,6 +339,11 @@ def main():
         "--add-replay-gain",
         action="store_true",
         help="calculate track/album ReplayGain",
+    )
+    parser.add_argument(
+        "--optimize-existing-artwork",
+        action="store_true",
+        help="optimize existing artwork files (slow; newly-fetched artwork is always optimized)",
     )
     parser.add_argument(
         "paths", metavar="path", nargs="+",
@@ -427,6 +494,7 @@ def main():
 
     if whole_directory:
         artwork_paths = [path for path in paths_exts if path[1] in ARTWORK_EXTENSIONS]
+        optimize_paths = []
 
         if len(artwork_paths) > 1:
             print("Multiple image files; not renaming.")
@@ -439,15 +507,27 @@ def main():
             new_artwork_path = os.path.join(os.path.dirname(artwork_path), new_artwork_path)
 
             os.rename(artwork_path, new_artwork_path)
+            artwork_paths = [(new_artwork_path, new_artwork_ext)]
 
         else:
             print("Fetching artwork...")
             artwork_path = os.path.join(directory, ARTWORK_FORMAT)
             artwork_path = fetch_itunes_album_art(album_artist, album, artwork_path)
+
             if artwork_path is not None:
-                if rip_time is not None:
-                    os.utime(artwork_path, times=(access_time, rip_time))
-                os.chmod(artwork_path, 0o644)
+                artwork_paths = [(artwork_path, artwork_path.rsplit(".", maxsplit=1)[-1])]
+                optimize_paths = artwork_paths
+
+        if args.optimize_existing_artwork:
+            optimize_paths = artwork_paths
+
+        for path in optimize_paths:
+            optimize_image(path)
+
+        for path in artwork_paths:
+            if rip_time is not None:
+                os.utime(path[0], times=(access_time, rip_time))
+            os.chmod(path[0], 0o644)
 
         if rip_time is not None:
             os.utime(directory, times=(access_time, rip_time))
