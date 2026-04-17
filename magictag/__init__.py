@@ -132,7 +132,7 @@ def filename_filter(value):
         value = re.sub(r'^[\._]*(.*?)[\._]*$', r'\1', value)
     return value
 
-def fetch_itunes_album_art(album_artist, album, filename):
+def fetch_itunes_album_art(album_artist, album, filename_format):
     try:
         import itunes
     except ImportError:
@@ -148,8 +148,53 @@ def fetch_itunes_album_art(album_artist, album, filename):
     if not len(albums):
         print('No iTunes search results. Continuing without album art.')
         return
+
     _, low_res = albums[0].get_artwork().popitem()
-    high_res = low_res[:low_res.rindex('/') + 1] + '10000x10000-999.jpg'
+
+    # low_res will be something like:
+    #
+    #    https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/80/f3/c6/
+    #    80f3c6e7-f7dd-8554-7be8-6ff1c1ca1456/656465471581_cover.jpg/100x100bb.jpg
+    #
+    # or:
+    #
+    #     https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/27/7c/e4/
+    #     277ce44b-d805-5a35-d640-f738a3c265e6/24UM1IM41433.rgb.jpg/100x100bb.jpg
+    #
+    # or even:
+    #
+    #     https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/f6/f7/c4/
+    #     f6f7c443-46cc-c56a-7369-ffd4676b425e/098787168563.png/100x100bb.jpg
+    #
+    # The second-last element seems to be a source image filename. As you can
+    # see, it varies significantly, often including human-readable terms like
+    # “cover”, or even the album title. Crucially, it usually has a .jpg
+    # extension, but occasionally – increasingly frequently for newer albums –
+    # it has a .png extension.
+    #
+    # The last element of the URL (here “100x100bb.jpg” in both cases) is
+    # parametric, controlling the resolution and quality of the output. Try
+    # “400x400-92.jpg”, for example, to get a 400x400 px JPEG with compression
+    # quality 92. (I don't know what “bb” means, but it yields the same file
+    # size as requests for quality 80 or with no quality parameter, although
+    # all three responses have slightly differing header bytes.) The
+    # compression format can also be controlled by modifying the extension; you
+    # can get a JPEG image with .jpg, a PNG with .png, or a WebP with .webp.
+    #
+    # If you request an impossibly high resolution or quality level, the API
+    # will simply give you the biggest thing it has. For example, in the case
+    # of the first URL given above, the source imagery appears to be
+    # 3000x3000 px, and so you will get the same image response for both
+    # “3000x3000-100.jpg” and “4000x4000-100.jpg” – or, for that matter, for
+    # “10000x10000-999.jpg”.
+    #
+    # I am fairly certain that requesting the largest, highest-quality image
+    # possible in the same format as the source image avoids re-encoding.
+
+    source, _ = low_res.rsplit("/", maxsplit=1)
+    _, source_ext = source.rsplit(".", maxsplit=1)
+    high_res = f"{source}/10000x10000-999.{source_ext}"
+    filename = filename_format.format(source_ext)
 
     try:
         urllib.request.urlretrieve(high_res, filename)
@@ -397,7 +442,7 @@ def main():
 
         else:
             print("Fetching artwork...")
-            artwork_path = os.path.join(directory, ARTWORK_FORMAT.format("jpg"))
+            artwork_path = os.path.join(directory, ARTWORK_FORMAT)
             artwork_path = fetch_itunes_album_art(album_artist, album, artwork_path)
             if artwork_path is not None:
                 if rip_time is not None:
