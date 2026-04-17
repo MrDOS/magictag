@@ -24,9 +24,13 @@ import sys
 from titlecase import titlecase
 import urllib.request
 
-ARTWORK_EXTENSIONS = ("jpg", "jpeg")
+ARTWORK_EXTENSIONS = ("jpg", "jpeg", "png")
 """Accept files with these extensions as album artwork."""
-TOUCH_EXTENSIONS = ("cue", "png", "log", "txt") + ARTWORK_EXTENSIONS
+ARTWORK_EXTENSION_REPLACEMENTS = {"jpeg": "jpg"}
+"""When renaming artwork, remap these extensions."""
+ARTWORK_FORMAT = "folder.{}"
+"""Desired filename format for a single artwork file."""
+TOUCH_EXTENSIONS = ("cue", "log", "txt") + ARTWORK_EXTENSIONS
 """Files with these extensions should have their mtimes matched to the log."""
 
 FEAT_TERMS = ['feat.', 'ft.']
@@ -377,16 +381,23 @@ def main():
         os.rename(cue_path, new_cue_path)
 
     if whole_directory:
-        image_paths = [path[0] for path in paths_exts if path[1] in ARTWORK_EXTENSIONS]
-        if len(image_paths) > 1:
-            print('Multiple image files; not renaming.')
-        elif len(image_paths) == 1:
-            image_path = image_paths[0]
-            new_image_path = os.path.join(os.path.dirname(image_path), 'folder.jpg')
-            os.rename(image_path, new_image_path)
+        artwork_paths = [path for path in paths_exts if path[1] in ARTWORK_EXTENSIONS]
+
+        if len(artwork_paths) > 1:
+            print("Multiple image files; not renaming.")
+
+        elif len(artwork_paths) == 1:
+            artwork_path, artwork_ext = artwork_paths[0]
+
+            new_artwork_ext = ARTWORK_EXTENSION_REPLACEMENTS.get(artwork_ext, artwork_ext)
+            new_artwork_path = ARTWORK_FORMAT.format(new_artwork_ext)
+            new_artwork_path = os.path.join(os.path.dirname(artwork_path), new_artwork_path)
+
+            os.rename(artwork_path, new_artwork_path)
+
         else:
-            print('Fetching artwork...')
-            artwork_path = os.path.join(directory, 'folder.jpg')
+            print("Fetching artwork...")
+            artwork_path = os.path.join(directory, ARTWORK_FORMAT.format("jpg"))
             artwork_path = fetch_itunes_album_art(album_artist, album, artwork_path)
             if artwork_path is not None:
                 if rip_time is not None:
