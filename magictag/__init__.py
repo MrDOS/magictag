@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.52.0'
+__version__ = '0.53.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -511,8 +511,9 @@ def main():
 
         else:
             print("Fetching artwork...")
-            artwork_path = os.path.join(directory, ARTWORK_FORMAT)
-            artwork_path = fetch_itunes_album_art(album_artist, album, artwork_path)
+            formattable_directory = directory.replace("{", "{{").replace("}", "}}")
+            artwork_format = os.path.join(formattable_directory, ARTWORK_FORMAT)
+            artwork_path = fetch_itunes_album_art(album_artist, album, artwork_format)
 
             if artwork_path is not None:
                 artwork_paths = [(artwork_path, artwork_path.rsplit(".", maxsplit=1)[-1])]
