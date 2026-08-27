@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.53.0'
+__version__ = '0.54.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -333,6 +333,13 @@ def main():
         help="treat “with” as a term for featured artists",
     )
     parser.add_argument(
+        "--keep-tag",
+        metavar="TAG",
+        dest="keep_tags",
+        action="append",
+        help="do not modify this tag or its value (may be specified multiple times)",
+    )
+    parser.add_argument(
         "--fix-title-case", action="store_true", help="fix tag capitalization"
     )
     parser.add_argument(
@@ -433,6 +440,10 @@ def main():
     for song in songs:
         tags = ALLOWED_TAGS.copy()
         for tag, value in song.tags:
+            if tag in args.keep_tags:
+                tags[tag] = value
+                continue
+
             tag = tag.upper()
 
             if tag in RENAME_TAGS:
@@ -455,6 +466,9 @@ def main():
             tags[tag] = value
 
         for tag in GENERATE_TAGS:
+            if tag in args.keep_tags:
+                continue
+
             try:
                 tags[tag] = GENERATE_TAGS[tag](tag, tags, songs)
             except ValueError as e:
