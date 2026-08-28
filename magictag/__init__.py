@@ -4,7 +4,7 @@
 Magically retag FLAG files.
 """
 
-__version__ = '0.54.0'
+__version__ = '0.55.0'
 
 __author__ = 'Samuel Coleman'
 __contact__ = 'samuel@seenet.ca'
@@ -336,6 +336,7 @@ def main():
         "--keep-tag",
         metavar="TAG",
         dest="keep_tags",
+        default=[],
         action="append",
         help="do not modify this tag or its value (may be specified multiple times)",
     )
